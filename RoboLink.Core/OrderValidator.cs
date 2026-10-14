@@ -1,3 +1,5 @@
+using System.Text;
+
 namespace RoboLink.Core;
 
 public record ValidationError(string Field, string Message);
@@ -26,6 +28,22 @@ public static class OrderValidator
         if (value.IndexOfAny(InvalidCharacters) > 0)
         {
             errors.Add(new ValidationError(field, $"{field} can't contain a comma, |, ^ or a line break."));
+        }
+    }
+
+    private static void CheckRequired(List<ValidationError> errors, string field, string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            errors.Add(new ValidationError(field, $"{field} is required."));
+        }
+    }
+
+    private static void CheckMaxByte(List<ValidationError> errors, string field, string value, int max)
+    {
+        if (Encoding.UTF8.GetByteCount(value) > max)
+        {
+            errors.Add(new ValidationError(field, $"{field} is too long (max {max} bytes)."));
         }
     }
 }
