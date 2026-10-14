@@ -32,6 +32,23 @@ public static class OrderValidator
         CheckMaxBytes(errors, "Department", o.Department, 20);
         CheckMaxBytes(errors, "RFID", o.Rfid, 15);
 
+        CheckRange(errors, "Host terminal", o.HostTerminal, 0, 9999);
+        CheckRange(errors, "ROBO terminal", o.RoboTerminal, 0, 9999);
+        CheckRange(errors, "Tray number", o.TrayNo, 0, 9999);
+        CheckRange(errors, "Sequence number", o.SeqNo, 1, 99);
+
+        if (o.QueueNo is { } q)
+            CheckRange(errors, "Queue number", q, 0, 9999);
+        CheckRange(errors, "Label count", o.LabelCount, 1, 99);
+        CheckRange(errors, "Priority", o.Priority, 0, 0);
+
+        if (o.Volume < 0 || o.Volume > 999.9m)
+            errors.Add(new ValidationError("Volume", "Volume must be between 0 and 999.9."));
+
+        int[] stockers = [1, 2, 3, 4, 5, 6, 99];
+        if (!stockers.Contains(o.StockerCode))
+            errors.Add(new ValidationError("Stocker code", "Stocker code must be 1 to 6, or 99 for a manual label."));
+
         return errors;
     }
 
@@ -57,5 +74,11 @@ public static class OrderValidator
         {
             errors.Add(new ValidationError(field, $"{field} is too long (max {max} bytes)."));
         }
+    }
+
+    private static void CheckRange(List<ValidationError> errors, string field, int value, int min, int max)
+    {
+        if (value < min || value > max)
+            errors.Add(new ValidationError(field, $"{field} must be between {min} and {max}."));
     }
 }
