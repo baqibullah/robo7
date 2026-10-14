@@ -35,4 +35,26 @@ public class OrderValidatorTests
         Assert.Empty(errors);
     }
 
+
+    [Fact]
+    public void Empty_name_is_rejected()
+    {
+        var errors = OrderValidator.ValidateOrder(Order(""), "Pediatrics ward", "A12345678901A");
+        Assert.Contains(errors, e => e.Field == "Patient name");
+    }
+
+    [Fact]
+    public void Name_over_20_bytes_is_rejected()
+    {
+        var errors = OrderValidator.ValidateOrder(Order(new string('A', 21)), "Pediatrics ward", "A12345678901A");
+        Assert.Contains(errors, e => e.Field == "Patient name");
+    }
+
+    [Fact]
+    public void Non_english_name_counts_bytes_not_characters()
+    {
+        // Non-english 11 characters: é
+        var errors = OrderValidator.ValidateOrder(Order(new string('é', 11)), "Pediatrics ward", "A12345678901A");
+        Assert.Contains(errors, e => e.Field == "Patient name");
+    }
 }

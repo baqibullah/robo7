@@ -20,6 +20,18 @@ public static class OrderValidator
         CheckForbiddenChars(errors, "Barcode", barcode);
         CheckForbiddenChars(errors, "RFID", o.Rfid);
 
+        CheckRequired(errors, "Patient ID", o.PatientId);
+        CheckRequired(errors, "Patient name", o.PatientName);
+        CheckRequired(errors, "Container", o.Container);
+        CheckRequired(errors, "Department", o.Department);
+        CheckRequired(errors, "Barcode", barcode);
+
+        CheckMaxBytes(errors, "Patient ID", o.PatientId, 20);
+        CheckMaxBytes(errors, "Patient name", o.PatientName, 20);
+        CheckMaxBytes(errors, "Container", o.Container, 20);
+        CheckMaxBytes(errors, "Department", o.Department, 20);
+        CheckMaxBytes(errors, "RFID", o.Rfid, 15);
+
         return errors;
     }
 
@@ -39,7 +51,7 @@ public static class OrderValidator
         }
     }
 
-    private static void CheckMaxByte(List<ValidationError> errors, string field, string value, int max)
+    private static void CheckMaxBytes(List<ValidationError> errors, string field, string value, int max)
     {
         if (Encoding.UTF8.GetByteCount(value) > max)
         {
