@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Text;
 
 namespace RoboLink.Core;
@@ -6,7 +7,9 @@ public record ValidationError(string Field, string Message);
 
 public static class OrderValidator
 {
-    private static readonly char[] InvalidCharacters = [',', '|', '^', '\r', '\n'];
+
+    private static readonly SearchValues<char> InvalidCharacters = SearchValues.Create(",|^\r\n");
+    private static readonly SearchValues<char> InvalidFileNameChars = SearchValues.Create("\\/:*?\"<>");
 
     public static List<ValidationError> ValidateOrder(TubeOrder o, string ward, string barcode)
     {
@@ -39,6 +42,7 @@ public static class OrderValidator
 
         if (o.QueueNo is { } q)
             CheckRange(errors, "Queue number", q, 0, 9999);
+
         CheckRange(errors, "Label count", o.LabelCount, 1, 99);
         CheckRange(errors, "Priority", o.Priority, 0, 0);
 
@@ -49,12 +53,18 @@ public static class OrderValidator
         if (!stockers.Contains(o.StockerCode))
             errors.Add(new ValidationError("Stocker code", "Stocker code must be 1 to 6, or 99 for a manual label."));
 
+
+        CheckFileNameChars(errors, "Patient ID", o.PatientId);
+        CheckFileNameChars(errors, "Patient name", o.PatientName);
+        CheckFileNameChars(errors, "Container", o.Container);
+        CheckFileNameChars(errors, "Department", o.Department);
+
         return errors;
     }
 
     private static void CheckForbiddenChars(List<ValidationError> errors, string field, string value)
     {
-        if (value.IndexOfAny(InvalidCharacters) > 0)
+        if (value.AsSpan().ContainsAny(InvalidCharacters))
         {
             errors.Add(new ValidationError(field, $"{field} can't contain a comma, |, ^ or a line break."));
         }
@@ -80,5 +90,11 @@ public static class OrderValidator
     {
         if (value < min || value > max)
             errors.Add(new ValidationError(field, $"{field} must be between {min} and {max}."));
+    }
+
+    private static void CheckFileNameChars(List<ValidationError> errors, string field, string value)
+    {
+        if (value.AsSpan().ContainsAny(InvalidFileNameChars))
+            errors.Add(new ValidationError(field, $"{field} can't contain \\ / : * ? \" < or >."));
     }
 }

@@ -84,4 +84,15 @@ public class OrderValidatorTests
         var errors = OrderValidator.ValidateOrder(order, "Pediatrics ward", "A12345678901A");
         Assert.Contains(errors, e => e.Field == "Stocker code");
     }
+
+    [Theory]
+    [InlineData("A/B")]
+    [InlineData("A:B")]
+    [InlineData("A*B")]
+    [InlineData("A?B")]
+    public void Windows_file_name_character_in_name_is_rejected(string name)
+    {
+        var errors = OrderValidator.ValidateOrder(Order(name), "Pediatrics ward", "A12345678901A");
+        Assert.Contains(errors, e => e.Field == "Patient name");
+    }
 }
