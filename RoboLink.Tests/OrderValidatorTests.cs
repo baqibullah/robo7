@@ -95,4 +95,26 @@ public class OrderValidatorTests
         var errors = OrderValidator.ValidateOrder(Order(name), "Pediatrics ward", "A12345678901A");
         Assert.Contains(errors, e => e.Field == "Patient name");
     }
+
+    [Theory]
+    [InlineData(1.25)]
+    [InlineData(1000)]
+    [InlineData(-1)]
+    public void Bad_volume_is_rejected(double volume)
+    {
+        var order = Order() with { Volume = (decimal)volume };
+        var errors = OrderValidator.ValidateOrder(order, "Pediatrics ward", "A12345678901A");
+        Assert.Contains(errors, e => e.Field == "Volume");
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1.5)]
+    [InlineData(999.9)]
+    public void Good_volume_is_accepted(double volume)
+    {
+        var order = Order() with { Volume = (decimal)volume };
+        var errors = OrderValidator.ValidateOrder(order, "Pediatrics ward", "A12345678901A");
+        Assert.DoesNotContain(errors, e => e.Field == "Volume");
+    }
 }

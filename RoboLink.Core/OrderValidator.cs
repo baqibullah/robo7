@@ -46,8 +46,8 @@ public static class OrderValidator
         CheckRange(errors, "Label count", o.LabelCount, 1, 99);
         CheckRange(errors, "Priority", o.Priority, 0, 0);
 
-        if (o.Volume < 0 || o.Volume > 999.9m)
-            errors.Add(new ValidationError("Volume", "Volume must be between 0 and 999.9."));
+        if (o.Volume < 0 || o.Volume > 999.9m || o.Volume != Math.Round(o.Volume, 1))
+            errors.Add(new ValidationError("Volume", "Volume must be between 0 and 999.9 with at most one decimal."));
 
         int[] stockers = [1, 2, 3, 4, 5, 6, 99];
         if (!stockers.Contains(o.StockerCode))
