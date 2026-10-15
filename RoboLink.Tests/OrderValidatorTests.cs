@@ -57,4 +57,31 @@ public class OrderValidatorTests
         var errors = OrderValidator.ValidateOrder(Order(new string('é', 11)), "Pediatrics ward", "A12345678901A");
         Assert.Contains(errors, e => e.Field == "Patient name");
     }
+
+    [Fact]
+    public void Tray_number_over_9999_is_rejected()
+    {
+        var order = Order() with { TrayNo = 124345 };
+        var errors = OrderValidator.ValidateOrder(order, "Pediatrics ward", "A12345678901A");
+        Assert.Contains(errors, e => e.Field == "Tray number");
+    }
+
+    [Fact]
+    public void Blank_queue_number_is_valid()
+    {
+        var order = Order() with { QueueNo = null };
+        var errors = OrderValidator.ValidateOrder(order, "Pediatrics ward", "A12345678901A");
+        Assert.Empty(errors);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(7)]
+    [InlineData(98)]
+    public void Bad_stocker_code_is_rejected(int code)
+    {
+        var order = Order() with { StockerCode = code };
+        var errors = OrderValidator.ValidateOrder(order, "Pediatrics ward", "A12345678901A");
+        Assert.Contains(errors, e => e.Field == "Stocker code");
+    }
 }
