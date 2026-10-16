@@ -1,6 +1,6 @@
 namespace RoboLink.Core;
 
-interface IRoboFolder
+public interface IRoboFolder
 {
     Task WriteAsync(string name, byte[] content, CancellationToken ct = default);
     Task<bool> ExistsAsync(string name, CancellationToken ct = default);
