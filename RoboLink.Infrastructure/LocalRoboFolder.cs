@@ -28,7 +28,7 @@ public class LocalRoboFolder : IRoboFolder
     {
         IReadOnlyList<string> names = [.. Directory.EnumerateFiles(_root)
         .Select(Path.GetFileName)
-        .Where((n) => n is not null && !n.EndsWith(".tmp"))
+        .Where(n => n is not null && !n.EndsWith(".tmp"))
         .Select(n => n!)];
 
         return Task.FromResult(names);

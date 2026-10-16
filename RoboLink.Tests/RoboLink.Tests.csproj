@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\RoboLink.Core\RoboLink.Core.csproj" />
+    <ProjectReference Include="..\RoboLink.Infrastructure\RoboLink.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>
