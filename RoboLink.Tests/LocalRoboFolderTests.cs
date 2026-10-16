@@ -40,12 +40,92 @@ public class LocalRoboFolderTests : IDisposable
         byte[] bytes = [1, 2, 3];
         await localRoboFolder.WriteAsync("a.dat", bytes);
 
-        IReadOnlyList<string> names = [.. Directory.GetFiles(_folder)
-        .Select(Path.GetFileName)
-        .Where(n => n is not null && n.EndsWith(".tmp"))
-        .Select(n => n!)];
+        Assert.DoesNotContain(Directory.GetFiles(_folder), f => f.EndsWith(".tmp"));
+    }
+
+    [Fact]
+    public async Task ExistsAsync_ReturnsTrueAfterWrite()
+    {
+        var localRoboFolder = new LocalRoboFolder(_folder);
+        await localRoboFolder.WriteAsync("a.dat", [1, 2, 3]);
+
+        Assert.True(await localRoboFolder.ExistsAsync("a.dat"));
+    }
+
+    [Fact]
+    public async Task ExistsAsync_ReturnsFalseForMissingFile()
+    {
+        var localRoboFolder = new LocalRoboFolder(_folder);
+
+        Assert.False(await localRoboFolder.ExistsAsync("a.dat"));
+    }
+
+    [Fact]
+    public async Task DeleteAsync_RemovesFile()
+    {
+        var localRoboFolder = new LocalRoboFolder(_folder);
+        await localRoboFolder.WriteAsync("a.dat", [1, 2, 3]);
+
+        await localRoboFolder.DeleteAsync("a.dat");
+
+        Assert.False(File.Exists(Path.Combine(_folder, "a.dat")));
+    }
+
+    [Fact]
+    public async Task DeleteAsync_DoesNotThrowForMissingFile()
+    {
+        var localRoboFolder = new LocalRoboFolder(_folder);
+
+        await localRoboFolder.DeleteAsync("missing.dat");
+    }
+
+    [Fact]
+    public async Task ListAsync_ReturnsWrittenNames()
+    {
+        var localRoboFolder = new LocalRoboFolder(_folder);
+        await localRoboFolder.WriteAsync("a.dat", [1]);
+        await localRoboFolder.WriteAsync("b.dat", [2]);
+
+        var names = await localRoboFolder.ListAsync();
+
+        Assert.Equal(2, names.Count);
+        Assert.Contains("a.dat", names);
+        Assert.Contains("b.dat", names);
+    }
+
+    [Fact]
+    public async Task ListAsync_HidesTmpFiles()
+    {
+        var localRoboFolder = new LocalRoboFolder(_folder);
+        File.WriteAllBytes(Path.Combine(_folder, "half.dat.tmp"), [1]);
+
+        var names = await localRoboFolder.ListAsync();
 
         Assert.Empty(names);
+    }
+
+    [Fact]
+    public async Task WriteAsync_RejectsNameWithFolder()
+    {
+        var localRoboFolder = new LocalRoboFolder(_folder);
+
+        await Assert.ThrowsAsync<ArgumentException>(() => localRoboFolder.WriteAsync("../x", [1]));
+    }
+
+    [Fact]
+    public async Task ExistsAsync_RejectsNameWithFolder()
+    {
+        var localRoboFolder = new LocalRoboFolder(_folder);
+
+        await Assert.ThrowsAsync<ArgumentException>(() => localRoboFolder.ExistsAsync("../x"));
+    }
+
+    [Fact]
+    public async Task DeleteAsync_RejectsNameWithFolder()
+    {
+        var localRoboFolder = new LocalRoboFolder(_folder);
+
+        await Assert.ThrowsAsync<ArgumentException>(() => localRoboFolder.DeleteAsync("../x"));
     }
 
     public void Dispose()
