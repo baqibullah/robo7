@@ -22,4 +22,7 @@
     <ProjectReference Include="..\RoboLink.Core\RoboLink.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="Fixtures\sample.dat" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>
