@@ -1,6 +1,8 @@
 namespace RoboLink.Core;
 
-
+/// <summary>
+/// Describes the DAT filename, Ward and Barcode are not part of this record as per DAT file name structure.
+/// </summary>
 public record TubeOrder(
     int HostTerminal,
     int RoboTerminal,
