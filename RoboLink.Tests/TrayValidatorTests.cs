@@ -53,6 +53,48 @@ public class TrayValidatorTests
         Assert.Equal("Tray", error.Field);
     }
 
+    [Fact]
+    public void Validate_SequenceGap_ReturnsError()
+    {
+        var errors = TrayValidator.Validate([MakeTube(1, isLast: false), MakeTube(3)]);
+        Assert.Contains(errors, e => e.Message.Contains("Sequence numbers"));
+    }
+
+
+    [Fact]
+    public void Validate_DuplicateSequence_ReturnsError()
+    {
+        var errors = TrayValidator.Validate([MakeTube(1, isLast: false), MakeTube(1)]);
+
+        Assert.Contains(errors, e => e.Message.Contains("Sequence numbers"));
+    }
+
+    [Fact]
+    public void Validate_NoLastTube_ReturnsError()
+    {
+        var errors = TrayValidator.Validate([MakeTube(1, isLast: false), MakeTube(2, isLast: false)]);
+
+        var error = Assert.Single(errors);
+        Assert.Contains("marked last", error.Message);
+    }
+
+    [Fact]
+    public void Validate_TwoLastTubes_ReturnsError()
+    {
+        var errors = TrayValidator.Validate([MakeTube(1), MakeTube(2)]);
+
+        var error = Assert.Single(errors);
+        Assert.Contains("marked last", error.Message);
+    }
+
+    [Fact]
+    public void Validate_LastTubeNotHighest_ReturnsError()
+    {
+        var errors = TrayValidator.Validate([MakeTube(1), MakeTube(2, isLast: false)]);
+
+        var error = Assert.Single(errors);
+        Assert.Contains("marked last", error.Message);
+    }
 
     private static Tube MakeTube(int seqNo = 1, bool isLast = true) => new(
         new TubeOrder(

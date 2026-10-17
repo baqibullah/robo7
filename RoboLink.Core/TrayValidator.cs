@@ -12,6 +12,11 @@ public static class TrayValidator
             return errors;
         }
 
+        // Cross tube check making sure each Tube in belonging to on tray has the same:
+        // 1. HostTerminal
+        // 2. RoboTerminal
+        // 3. Date
+        // 4. TrayNo
         var first = tray[0].TubeOrder;
         foreach (var tube in tray.Skip(1))
         {
@@ -25,6 +30,15 @@ public static class TrayValidator
                 $"Tube {o.SeqNo} has different terminals, date or tray number than the first tube."));
             }
         }
+
+        // Sequenece check: 1,2,3 (involving no gaps and exactly one tube is last)
+        var seqNumbers = tray.Select(t => t.TubeOrder.SeqNo).Order().ToList();
+        if (!seqNumbers.SequenceEqual(Enumerable.Range(1, tray.Count)))
+            errors.Add(new ValidationError("Tray", "Sequence numbers must run 1, 2, 3... with no gaps or duplicates."));
+
+        var lastTubes = tray.Where(t => t.TubeOrder.IsLastTube).ToList();
+        if (lastTubes.Count != 1 || lastTubes[0].TubeOrder.SeqNo != tray.Count)
+            errors.Add(new ValidationError("Tray", "Exactly one tube must be marked last, and it must have the highest sequence number."));
 
         foreach (var tube in tray)
         {
