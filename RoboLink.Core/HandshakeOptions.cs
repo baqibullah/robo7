@@ -1,6 +1,6 @@
 namespace RoboLink.Core;
 
-public record HandShakeOptions
+public record HandshakeOptions
 {
     public bool UseBom { get; init; } = false;
 }
