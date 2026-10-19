@@ -7,7 +7,7 @@ public class TrayValidatorTests
     [Fact]
     public void Validate_ValidTray_ReturnsNoErrors()
     {
-        var tray = new List<Tube> { MakeTube() };
+        var tray = new List<Tube> { TestData.MakeTube() };
 
         var errors = TrayValidator.Validate(tray);
 
@@ -26,7 +26,7 @@ public class TrayValidatorTests
     [Fact]
     public void Validate_BadTube_PrefixesFieldWithTubeNumber()
     {
-        var tube = MakeTube();
+        var tube = TestData.MakeTube();
         var bad = tube with { TubeOrder = tube.TubeOrder with { PatientName = "" } };
 
         var errors = TrayValidator.Validate([bad]);
@@ -38,17 +38,17 @@ public class TrayValidatorTests
     [Fact]
     public void Validate_TwoMatchingTubes_ReturnsNoErrors()
     {
-        var tray = new List<Tube> { MakeTube(1, isLast: false), MakeTube(2) };
+        var tray = new List<Tube> { TestData.MakeTube(1, isLast: false), TestData.MakeTube(2) };
         Assert.Empty(TrayValidator.Validate(tray));
     }
 
     [Fact]
     public void Validate_DifferentTrayNumber_ReturnsError()
     {
-        var second = MakeTube(2);
+        var second = TestData.MakeTube(2);
         second = second with { TubeOrder = second.TubeOrder with { TrayNo = 99 } };
 
-        var errors = TrayValidator.Validate([MakeTube(1, isLast: false), second]);
+        var errors = TrayValidator.Validate([TestData.MakeTube(1, isLast: false), second]);
         var error = Assert.Single(errors);
         Assert.Equal("Tray", error.Field);
     }
@@ -56,7 +56,7 @@ public class TrayValidatorTests
     [Fact]
     public void Validate_SequenceGap_ReturnsError()
     {
-        var errors = TrayValidator.Validate([MakeTube(1, isLast: false), MakeTube(3)]);
+        var errors = TrayValidator.Validate([TestData.MakeTube(1, isLast: false), TestData.MakeTube(3)]);
         Assert.Contains(errors, e => e.Message.Contains("Sequence numbers"));
     }
 
@@ -64,7 +64,7 @@ public class TrayValidatorTests
     [Fact]
     public void Validate_DuplicateSequence_ReturnsError()
     {
-        var errors = TrayValidator.Validate([MakeTube(1, isLast: false), MakeTube(1)]);
+        var errors = TrayValidator.Validate([TestData.MakeTube(1, isLast: false), TestData.MakeTube(1)]);
 
         Assert.Contains(errors, e => e.Message.Contains("Sequence numbers"));
     }
@@ -72,7 +72,7 @@ public class TrayValidatorTests
     [Fact]
     public void Validate_NoLastTube_ReturnsError()
     {
-        var errors = TrayValidator.Validate([MakeTube(1, isLast: false), MakeTube(2, isLast: false)]);
+        var errors = TrayValidator.Validate([TestData.MakeTube(1, isLast: false), TestData.MakeTube(2, isLast: false)]);
 
         var error = Assert.Single(errors);
         Assert.Contains("marked last", error.Message);
@@ -81,7 +81,7 @@ public class TrayValidatorTests
     [Fact]
     public void Validate_TwoLastTubes_ReturnsError()
     {
-        var errors = TrayValidator.Validate([MakeTube(1), MakeTube(2)]);
+        var errors = TrayValidator.Validate([TestData.MakeTube(1), TestData.MakeTube(2)]);
 
         var error = Assert.Single(errors);
         Assert.Contains("marked last", error.Message);
@@ -90,28 +90,10 @@ public class TrayValidatorTests
     [Fact]
     public void Validate_LastTubeNotHighest_ReturnsError()
     {
-        var errors = TrayValidator.Validate([MakeTube(1), MakeTube(2, isLast: false)]);
+        var errors = TrayValidator.Validate([TestData.MakeTube(1), TestData.MakeTube(2, isLast: false)]);
 
         var error = Assert.Single(errors);
         Assert.Contains("marked last", error.Message);
     }
 
-    private static Tube MakeTube(int seqNo = 1, bool isLast = true) => new(
-        new TubeOrder(
-            HostTerminal: 5,
-            RoboTerminal: 1,
-            Date: new DateOnly(2026, 11, 26),
-            TrayNo: 32,
-            IsLastTube: isLast,
-            SeqNo: seqNo,
-            QueueNo: 1234,
-            PatientId: "0123456789",
-            PatientName: "Tiger Woods",
-            Container: "HbA1c",
-            Volume: 1.0m,
-            Department: "Pediatrics",
-            LabelCount: 1,
-            StockerCode: 99),
-        Ward: "Pediatrics ward",
-        Barcode: "A12345678901A");
 }
