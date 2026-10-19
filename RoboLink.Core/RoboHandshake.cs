@@ -16,6 +16,8 @@ public class RoboHandshake(IRoboFolder folder, HandshakeOptions options)
             await folder.WriteAsync(name, DatEncoder.Encode(body, options.UseBom), ct);
         }
 
+        var defName = ControlFileName.From(tray[0].TubeOrder).BuildDef();
+        await folder.WriteAsync(defName, [], ct);
         return errors;
     }
 }
