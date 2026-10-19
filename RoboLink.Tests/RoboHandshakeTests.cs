@@ -58,6 +58,31 @@ public class RoboHandshakeTests : IDisposable
         Assert.Equal(ControlFileName.From(tray[0].TubeOrder).BuildDef(), recording.Writes[^1]);
     }
 
+    [Fact]
+    public async Task SendAsync_DatWriteFails_RemovesWrittenDatsAndRethrows()
+    {
+        var tray = new List<Tube> { TestData.MakeTube(1, isLast: false), TestData.MakeTube(2) };
+        var recording = new RecordingFolder { FailOn = DatFileName.Build(tray[1].TubeOrder) };
+        var handshake = new RoboHandshake(recording, new HandshakeOptions());
+
+        await Assert.ThrowsAsync<IOException>(() => handshake.SendAsync(tray));
+
+        Assert.Contains(DatFileName.Build(tray[0].TubeOrder), recording.Deletes);
+    }
+
+    [Fact]
+    public async Task SendAsync_DefWriteFails_RemovesDefAndDats()
+    {
+        var tray = new List<Tube> { TestData.MakeTube() };
+        var defName = ControlFileName.From(tray[0].TubeOrder).BuildDef();
+        var recording = new RecordingFolder { FailOn = defName };
+        var handshake = new RoboHandshake(recording, new HandshakeOptions());
+
+        await Assert.ThrowsAsync<IOException>(() => handshake.SendAsync(tray));
+
+        Assert.Equal([defName, DatFileName.Build(tray[0].TubeOrder)], recording.Deletes);
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_folder)) Directory.Delete(_folder, true);
@@ -68,15 +93,25 @@ public class RoboHandshakeTests : IDisposable
     private class RecordingFolder : IRoboFolder
     {
         public List<string> Writes { get; } = [];
+        public List<string> Deletes { get; } = [];
+        public string? FailOn { get; set; }
 
         public Task WriteAsync(string name, byte[] content, CancellationToken ct = default)
         {
+            if (name == FailOn)
+                throw new IOException("Simulated write failure.");
+
             Writes.Add(name);
+            return Task.CompletedTask;
+        }
+
+        public Task DeleteAsync(string name, CancellationToken ct = default)
+        {
+            Deletes.Add(name);
             return Task.CompletedTask;
         }
 
         public Task<bool> ExistsAsync(string name, CancellationToken ct = default) => Task.FromResult(false);
         public Task<IReadOnlyList<string>> ListAsync(CancellationToken ct = default) => Task.FromResult<IReadOnlyList<string>>([]);
-        public Task DeleteAsync(string name, CancellationToken ct = default) => Task.CompletedTask;
     }
 }
