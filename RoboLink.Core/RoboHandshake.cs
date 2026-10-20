@@ -35,6 +35,26 @@ public class RoboHandshake(IRoboFolder folder, HandshakeOptions options)
         return errors;
     }
 
+    public async Task<RoboReply> CheckReplyAsync(ControlFileName tray, CancellationToken ct = default)
+    {
+        var reply = RoboReply.Pending;
+
+        // We iterate through each file in the folder.
+        foreach (var name in await folder.ListAsync(ct))
+        {
+            // Skip if it doesn't parses as OK/NG (so DEF and junk files are skipped)
+            if (!ControlFileName.TryParse(name, out var parsed, out var kind) || parsed != tray)
+                continue;
+
+            if (kind == ControlResult.Ng)
+                return RoboReply.Ng;
+
+            reply = RoboReply.Ok;
+        }
+
+        return reply;
+    }
+
     private async Task RemoveAsync(List<string> names)
     {
         names.Reverse();
