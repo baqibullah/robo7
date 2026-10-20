@@ -2,7 +2,6 @@ using RoboLink.Core;
 
 namespace RoboLink.Infrastructure;
 
-
 public class LocalRoboFolder : IRoboFolder
 {
     private readonly string _root;

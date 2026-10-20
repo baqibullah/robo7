@@ -4,11 +4,13 @@ namespace RoboLink.Core;
 
 public enum ControlResult { Ok, Ng }
 
+// Describes the shared DEF/OK/NG file names.
 public record ControlFileName(int HostTerminal, int RoboTerminal, int Month, int Day, int TrayNo)
 {
     public static ControlFileName From(TubeOrder o) =>
         new(o.HostTerminal, o.RoboTerminal, o.Date.Month, o.Date.Day, o.TrayNo);
 
+    // Builds the DEF file.
     public string BuildDef() => string.Join(",",
        HostTerminal.ToString("D4"),
        RoboTerminal.ToString("D4"),
@@ -16,11 +18,14 @@ public record ControlFileName(int HostTerminal, int RoboTerminal, int Month, int
        TrayNo.ToString("D4"),
        "DEF.TXT");
 
+    // Builds the OK/NG file.
     public static bool TryParse(string name, out ControlFileName? result, out ControlResult kind)
     {
         result = null;
         kind = default;
 
+        // Split the file name by a comma into 4 equal parts: 0005,0001,1126,0032,DEF.TXT
+        // Such that we have ['0005', '0001', '1126', '0032', 'DEF.TXT']
         var parts = name.Split(',');
         if (parts.Length != 5) return false;
 

@@ -8,11 +8,11 @@ public class RoboHandshake(IRoboFolder folder, HandshakeOptions options)
         if (errors.Count > 0)
             return errors;
 
-
+        // keeps track of the files that are written.
+        // assuming halfway IO throws error, some files still be in that folder.
         var written = new List<string>();
         try
         {
-
             foreach (var tube in tray.OrderBy(t => t.TubeOrder.SeqNo))
             {
                 var name = DatFileName.Build(tube.TubeOrder);
