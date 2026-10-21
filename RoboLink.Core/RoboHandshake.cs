@@ -69,9 +69,22 @@ public class RoboHandshake(IRoboFolder folder, HandshakeOptions options)
         return reply;
     }
 
+    // Deletes the DAT files in sequence order, so last tube's DAT goes last.
+    // List the 
     public async Task CleanupAsync(IReadOnlyList<Tube> tray, CancellationToken ct = default)
     {
-        throw new NotImplementedException();
+        // We iterate through all DAT files and delete them in sequence order.
+        foreach (var tube in tray.OrderBy(t => t.TubeOrder.SeqNo))
+            await folder.DeleteAsync(DatFileName.Build(tube.TubeOrder), ct);
+
+        var id = ControlFileName.From(tray[0].TubeOrder);
+
+        // Deletes any OK/NG files matching our tray.
+        foreach (var name in await folder.ListAsync(ct))
+        {
+            if (ControlFileName.TryParse(name, out var parsed, out _) && parsed == id)
+                await folder.DeleteAsync(name, ct);
+        }
     }
 
     private async Task RemoveAsync(List<string> names)
