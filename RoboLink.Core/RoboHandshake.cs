@@ -69,6 +69,11 @@ public class RoboHandshake(IRoboFolder folder, HandshakeOptions options)
         return reply;
     }
 
+    public async Task CleanupAsync(IReadOnlyList<Tube> tray, CancellationToken ct = default)
+    {
+        throw new NotImplementedException();
+    }
+
     private async Task RemoveAsync(List<string> names)
     {
         names.Reverse();
