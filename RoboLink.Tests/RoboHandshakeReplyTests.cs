@@ -36,6 +36,34 @@ public class RoboHandshakeReplyTests : IDisposable
         Assert.Equal(expected, reply);
     }
 
+    [Fact]
+    public async Task CheckReplyAsync_OnlyOurDefAndDatFiles_ReturnsPending()
+    {
+        var handshake = new RoboHandshake(new LocalRoboFolder(_folder), new HandshakeOptions());
+        var tube = TestData.MakeTube(1);
+
+        var errors = await handshake.SendAsync([tube]);
+        Assert.Empty(errors);
+
+        var reply = await handshake.CheckReplyAsync(ControlFileName.From(tube.TubeOrder));
+
+        Assert.Equal(RoboReply.Pending, reply);
+    }
+
+    [Fact]
+    public async Task CheckReplyAsync_OkAndNgBothPresent_ReturnsNg()
+    {
+        var folder = new LocalRoboFolder(_folder);
+        var handshake = new RoboHandshake(folder, new HandshakeOptions());
+
+        await folder.WriteAsync("0005,0001,1126,0032,OK.txt", []);
+        await folder.WriteAsync("0005,0001,1126,0032,NG.txt", []);
+
+        var reply = await handshake.CheckReplyAsync(new ControlFileName(5, 1, 11, 26, 32));
+
+        Assert.Equal(RoboReply.Ng, reply);
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_folder)) Directory.Delete(_folder, true);

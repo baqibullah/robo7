@@ -35,6 +35,12 @@ public class RoboHandshake(IRoboFolder folder, HandshakeOptions options)
         return errors;
     }
 
+    /// <summary>
+    /// Goes through each file in the folder and check the replied state of the machine. 
+    /// </summary>
+    /// <param name="tray">Holds the tray's identity.</param>
+    /// <param name="ct"></param>
+    /// <returns>Replied state of the machine</returns>
     public async Task<RoboReply> CheckReplyAsync(ControlFileName tray, CancellationToken ct = default)
     {
         var reply = RoboReply.Pending;
@@ -43,6 +49,14 @@ public class RoboHandshake(IRoboFolder folder, HandshakeOptions options)
         foreach (var name in await folder.ListAsync(ct))
         {
             // Skip if it doesn't parses as OK/NG (so DEF and junk files are skipped)
+            // Folder can hold files for multiple trays we use the ControlFileName parameter to match our tray's file.
+
+            // Example: ControlFileName is 0005,0001,1126,0032,OK.txt
+
+            // Folder containing several files:
+            // 0005,0001,1126,0031,OK.txt: parses fine, but tray 31 isn’t ours, so skip.
+            // 0005,0001,1126,0032,DEF.TXT: TryParse returns false because it’s not OK or NG, so skip.
+            // 0005,0001,1126,0032,OK.txt: parses, tray 32 matches ours, so it counts.
             if (!ControlFileName.TryParse(name, out var parsed, out var kind) || parsed != tray)
                 continue;
 
@@ -66,7 +80,7 @@ public class RoboHandshake(IRoboFolder folder, HandshakeOptions options)
             }
             catch
             {
-                // We'll add loggin later.
+                // We'll add logging later.
             }
         }
     }
