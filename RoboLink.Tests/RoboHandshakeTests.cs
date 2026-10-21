@@ -88,30 +88,4 @@ public class RoboHandshakeTests : IDisposable
         if (Directory.Exists(_folder)) Directory.Delete(_folder, true);
         GC.SuppressFinalize(this);
     }
-
-    /// Hold records of the order of writes.
-    private class RecordingFolder : IRoboFolder
-    {
-        public List<string> Writes { get; } = [];
-        public List<string> Deletes { get; } = [];
-        public string? FailOn { get; set; }
-
-        public Task WriteAsync(string name, byte[] content, CancellationToken ct = default)
-        {
-            if (name == FailOn)
-                throw new IOException("Simulated write failure.");
-
-            Writes.Add(name);
-            return Task.CompletedTask;
-        }
-
-        public Task DeleteAsync(string name, CancellationToken ct = default)
-        {
-            Deletes.Add(name);
-            return Task.CompletedTask;
-        }
-
-        public Task<bool> ExistsAsync(string name, CancellationToken ct = default) => Task.FromResult(false);
-        public Task<IReadOnlyList<string>> ListAsync(CancellationToken ct = default) => Task.FromResult<IReadOnlyList<string>>([]);
-    }
 }
