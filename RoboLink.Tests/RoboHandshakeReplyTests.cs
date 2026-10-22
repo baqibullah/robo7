@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using RoboLink.Core;
 using RoboLink.Infrastructure;
 
@@ -11,7 +12,7 @@ public class RoboHandshakeReplyTests : IDisposable
     public async Task CheckReplyAsync_OkFileForTray_ReturnsOk()
     {
         var folder = new LocalRoboFolder(_folder);
-        var handshake = new RoboHandshake(folder, new HandshakeOptions());
+        var handshake = new RoboHandshake(folder, new HandshakeOptions(), NullLogger<RoboHandshake>.Instance);
         var tray = new ControlFileName(5, 1, 11, 26, 32);
 
         await folder.WriteAsync("0005,0001,1126,0032,OK.txt", []);
@@ -27,7 +28,7 @@ public class RoboHandshakeReplyTests : IDisposable
     public async Task CheckReplyAsync_ReplyFileAnyCase_ReturnsMatchingResult(string name, RoboReply expected)
     {
         var folder = new LocalRoboFolder(_folder);
-        var handshake = new RoboHandshake(folder, new HandshakeOptions());
+        var handshake = new RoboHandshake(folder, new HandshakeOptions(), NullLogger<RoboHandshake>.Instance);
         var tray = new ControlFileName(5, 1, 11, 26, 32);
 
         await folder.WriteAsync(name, []);
@@ -39,7 +40,7 @@ public class RoboHandshakeReplyTests : IDisposable
     [Fact]
     public async Task CheckReplyAsync_OnlyOurDefAndDatFiles_ReturnsPending()
     {
-        var handshake = new RoboHandshake(new LocalRoboFolder(_folder), new HandshakeOptions());
+        var handshake = new RoboHandshake(new LocalRoboFolder(_folder), new HandshakeOptions(), NullLogger<RoboHandshake>.Instance);
         var tube = TestData.MakeTube(1);
 
         var errors = await handshake.SendAsync([tube]);
@@ -54,7 +55,7 @@ public class RoboHandshakeReplyTests : IDisposable
     public async Task CheckReplyAsync_OkAndNgBothPresent_ReturnsNg()
     {
         var folder = new LocalRoboFolder(_folder);
-        var handshake = new RoboHandshake(folder, new HandshakeOptions());
+        var handshake = new RoboHandshake(folder, new HandshakeOptions(), NullLogger<RoboHandshake>.Instance);
 
         await folder.WriteAsync("0005,0001,1126,0032,OK.txt", []);
         await folder.WriteAsync("0005,0001,1126,0032,NG.txt", []);

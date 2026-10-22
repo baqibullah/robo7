@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using RoboLink.Core;
 using RoboLink.Infrastructure;
 
@@ -10,7 +11,7 @@ public class RoboHandshakeTests : IDisposable
     [Fact]
     public async Task SendAsync_InvalidTray_ReturnsErrorsAndWritesNothing()
     {
-        var handshake = new RoboHandshake(new LocalRoboFolder(_folder), new HandshakeOptions());
+        var handshake = new RoboHandshake(new LocalRoboFolder(_folder), new HandshakeOptions(), NullLogger<RoboHandshake>.Instance);
         var errors = await handshake.SendAsync([]);
         Assert.NotEmpty(errors);
         Assert.Empty(Directory.GetFiles(_folder));
@@ -19,7 +20,7 @@ public class RoboHandshakeTests : IDisposable
     [Fact]
     public async Task SendAsync_ValidTray_WritesOneDatPerTube()
     {
-        var handshake = new RoboHandshake(new LocalRoboFolder(_folder), new HandshakeOptions());
+        var handshake = new RoboHandshake(new LocalRoboFolder(_folder), new HandshakeOptions(), NullLogger<RoboHandshake>.Instance);
         var tray = new List<Tube> { TestData.MakeTube(1, false), TestData.MakeTube(2) };
 
         var errors = await handshake.SendAsync(tray);
@@ -35,7 +36,7 @@ public class RoboHandshakeTests : IDisposable
     [Fact]
     public async Task SendAsync_ValidTray_WritesEmptyDefFile()
     {
-        var handshake = new RoboHandshake(new LocalRoboFolder(_folder), new HandshakeOptions());
+        var handshake = new RoboHandshake(new LocalRoboFolder(_folder), new HandshakeOptions(), NullLogger<RoboHandshake>.Instance);
         var tray = new List<Tube> { TestData.MakeTube() };
 
         await handshake.SendAsync(tray);
@@ -49,7 +50,7 @@ public class RoboHandshakeTests : IDisposable
     public async Task SendAsync_ValidTray_WritesDefLast()
     {
         var recording = new RecordingFolder();
-        var handshake = new RoboHandshake(recording, new HandshakeOptions());
+        var handshake = new RoboHandshake(recording, new HandshakeOptions(), NullLogger<RoboHandshake>.Instance);
         var tray = new List<Tube> { TestData.MakeTube(1, isLast: false), TestData.MakeTube(2) };
 
         await handshake.SendAsync(tray);
@@ -63,7 +64,7 @@ public class RoboHandshakeTests : IDisposable
     {
         var tray = new List<Tube> { TestData.MakeTube(1, isLast: false), TestData.MakeTube(2) };
         var recording = new RecordingFolder { FailOn = DatFileName.Build(tray[1].TubeOrder) };
-        var handshake = new RoboHandshake(recording, new HandshakeOptions());
+        var handshake = new RoboHandshake(recording, new HandshakeOptions(), NullLogger<RoboHandshake>.Instance);
 
         await Assert.ThrowsAsync<IOException>(() => handshake.SendAsync(tray));
 
@@ -76,7 +77,7 @@ public class RoboHandshakeTests : IDisposable
         var tray = new List<Tube> { TestData.MakeTube() };
         var defName = ControlFileName.From(tray[0].TubeOrder).BuildDef();
         var recording = new RecordingFolder { FailOn = defName };
-        var handshake = new RoboHandshake(recording, new HandshakeOptions());
+        var handshake = new RoboHandshake(recording, new HandshakeOptions(), NullLogger<RoboHandshake>.Instance);
 
         await Assert.ThrowsAsync<IOException>(() => handshake.SendAsync(tray));
 

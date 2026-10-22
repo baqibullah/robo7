@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using RoboLink.Core;
 using RoboLink.Infrastructure;
 
@@ -11,7 +12,7 @@ public class RoboHandshakeCleanupTests : IDisposable
     public async Task CleanupAsync_AfterReply_RemovesDatsAndReplyFile()
     {
         var folder = new LocalRoboFolder(_folder);
-        var handshake = new RoboHandshake(folder, new HandshakeOptions());
+        var handshake = new RoboHandshake(folder, new HandshakeOptions(), NullLogger<RoboHandshake>.Instance);
         var tray = new List<Tube> { TestData.MakeTube(1, isLast: false), TestData.MakeTube(2) };
 
         var errors = await handshake.SendAsync(tray);
@@ -29,7 +30,7 @@ public class RoboHandshakeCleanupTests : IDisposable
     public async Task CleanupAsync_OtherTrayFiles_AreNotDeleted()
     {
         var folder = new LocalRoboFolder(_folder);
-        var handshake = new RoboHandshake(folder, new HandshakeOptions());
+        var handshake = new RoboHandshake(folder, new HandshakeOptions(), NullLogger<RoboHandshake>.Instance);
 
         var ours = TestData.MakeTube();
         var other = TestData.MakeTube();
@@ -57,7 +58,7 @@ public class RoboHandshakeCleanupTests : IDisposable
     {
         var recording = new RecordingFolder();
         recording.Existing.Add("0005,0001,1126,0032,OK.txt");
-        var handshake = new RoboHandshake(recording, new HandshakeOptions());
+        var handshake = new RoboHandshake(recording, new HandshakeOptions(), NullLogger<RoboHandshake>.Instance);
         var tray = new List<Tube> { TestData.MakeTube(1, isLast: false), TestData.MakeTube(2) };
 
         await handshake.CleanupAsync(tray);
@@ -76,7 +77,7 @@ public class RoboHandshakeCleanupTests : IDisposable
     {
         var tray = new List<Tube> { TestData.MakeTube() };
         var recording = new RecordingFolder { FailDeleteOn = DatFileName.Build(tray[0].TubeOrder) };
-        var handshake = new RoboHandshake(recording, new HandshakeOptions());
+        var handshake = new RoboHandshake(recording, new HandshakeOptions(), NullLogger<RoboHandshake>.Instance);
 
         await Assert.ThrowsAsync<IOException>(() => handshake.CleanupAsync(tray));
     }
