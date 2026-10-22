@@ -15,10 +15,10 @@ public class SmbRoboFolder(SmbOptions options) : IRoboFolder
         Task.Run(() => Run(store => List(store).Contains(name, StringComparer.OrdinalIgnoreCase)), ct);
 
     public Task WriteAsync(string name, byte[] content, CancellationToken ct = default) =>
-        throw new NotImplementedException();
+        Task.Run(() => RunVoid(store => Write(store, name, content)), ct);
 
     public Task DeleteAsync(string name, CancellationToken ct = default) =>
-        throw new NotImplementedException();
+        Task.Run(() => RunVoid(store => Delete(store, name)), ct);
 
     // Connects, logs in, opens the share, runs the action, then closes everything.
     // Func<ISMBFileStore, T> means "a method that takes the file store and returns a T".
@@ -52,6 +52,79 @@ public class SmbRoboFolder(SmbOptions options) : IRoboFolder
         {
             client.Logoff();
             client.Disconnect();
+        }
+    }
+
+    private void RunVoid(Action<ISMBFileStore> action) => Run(store => { action(store); return true; });
+
+    // Same rule as LocalRoboFolder: file names only, no folders.
+    private string PathFor(string name)
+    {
+        if (name.Contains('\\') || name.Contains('/'))
+            throw new ArgumentException("Name must be a file name only, no folders.", nameof(name));
+
+        return $@"{options.Folder}\{name}";
+    }
+
+    // Writes to name.tmp, then renames over the final name, so the machine never sees a half-written file.
+    private void Write(ISMBFileStore store, string name, byte[] content)
+    {
+        var finalPath = PathFor(name);
+        var tmpPath = finalPath + ".tmp";
+
+        var status = store.CreateFile(out var handle, out _, tmpPath,
+            AccessMask.GENERIC_WRITE | AccessMask.DELETE | AccessMask.SYNCHRONIZE,
+            SmbFileAttributes.Normal, ShareAccess.None, CreateDisposition.FILE_OVERWRITE_IF,
+            CreateOptions.FILE_NON_DIRECTORY_FILE | CreateOptions.FILE_SYNCHRONOUS_IO_ALERT, null);
+        if (status != NTStatus.STATUS_SUCCESS)
+            throw new IOException($"Could not create '{tmpPath}': {status}.");
+
+        try
+        {
+            // Our files are tiny, but write in 32 KB chunks anyway. An empty file skips the loop.
+            const int chunk = 32 * 1024;
+            for (var offset = 0; offset < content.Length; offset += chunk)
+            {
+                var part = content[offset..Math.Min(offset + chunk, content.Length)];
+                status = store.WriteFile(out _, handle, offset, part);
+                if (status != NTStatus.STATUS_SUCCESS)
+                    throw new IOException($"Could not write '{tmpPath}': {status}.");
+            }
+
+            status = store.SetFileInformation(handle,
+                new FileRenameInformationType2 { ReplaceIfExists = true, FileName = finalPath });
+            if (status != NTStatus.STATUS_SUCCESS)
+                throw new IOException($"Could not rename '{tmpPath}' to '{finalPath}': {status}.");
+        }
+        finally
+        {
+            store.CloseFile(handle);
+        }
+    }
+
+    // A missing file is not an error, so cancel can be retried safely.
+    private void Delete(ISMBFileStore store, string name)
+    {
+        var path = PathFor(name);
+
+        var status = store.CreateFile(out var handle, out _, path,
+            AccessMask.DELETE | AccessMask.SYNCHRONIZE, SmbFileAttributes.Normal, ShareAccess.None,
+            CreateDisposition.FILE_OPEN,
+            CreateOptions.FILE_NON_DIRECTORY_FILE | CreateOptions.FILE_SYNCHRONOUS_IO_ALERT, null);
+        if (status == NTStatus.STATUS_OBJECT_NAME_NOT_FOUND)
+            return;
+        if (status != NTStatus.STATUS_SUCCESS)
+            throw new IOException($"Could not open '{path}' for delete: {status}.");
+
+        try
+        {
+            status = store.SetFileInformation(handle, new FileDispositionInformation { DeletePending = true });
+            if (status != NTStatus.STATUS_SUCCESS)
+                throw new IOException($"Could not delete '{path}': {status}.");
+        }
+        finally
+        {
+            store.CloseFile(handle);
         }
     }
 
