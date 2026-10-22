@@ -63,12 +63,7 @@ public class RoboHandshakeCleanupTests : IDisposable
 
         await handshake.CleanupAsync(tray);
 
-        Assert.Equal(
-            [
-                DatFileName.Build(tray[0].TubeOrder),
-            DatFileName.Build(tray[1].TubeOrder),
-            "0005,0001,1126,0032,OK.txt",
-        ],
+        Assert.Equal([DatFileName.Build(tray[0].TubeOrder), DatFileName.Build(tray[1].TubeOrder), "0005,0001,1126,0032,OK.txt",],
             recording.Deletes);
     }
 

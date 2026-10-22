@@ -81,7 +81,6 @@ public class RoboHandshake(IRoboFolder folder, HandshakeOptions options, ILogger
     }
 
     // Deletes the DAT files in sequence order, so last tube's DAT goes last.
-    // List the 
     public async Task CleanupAsync(IReadOnlyList<Tube> tray, CancellationToken ct = default)
     {
         // We iterate through all DAT files and delete them in sequence order.
