@@ -1,6 +1,8 @@
+using Microsoft.Extensions.Logging;
+
 namespace RoboLink.Core;
 
-public class RoboHandshake(IRoboFolder folder, HandshakeOptions options)
+public class RoboHandshake(IRoboFolder folder, HandshakeOptions options, ILogger<RoboHandshake> logger)
 {
     public async Task<List<ValidationError>> SendAsync(IReadOnlyList<Tube> tray, CancellationToken ct = default)
     {
@@ -28,6 +30,8 @@ public class RoboHandshake(IRoboFolder folder, HandshakeOptions options)
         }
         catch
         {
+            logger.LogWarning("Send failed for tray {TrayNo}, removing {Count} written files.",
+            tray[0].TubeOrder.TrayNo, written.Count);
             await RemoveAsync(written);
             throw;
         }
@@ -43,7 +47,8 @@ public class RoboHandshake(IRoboFolder folder, HandshakeOptions options)
     /// <returns>Replied state of the machine</returns>
     public async Task<RoboReply> CheckReplyAsync(ControlFileName tray, CancellationToken ct = default)
     {
-        var reply = RoboReply.Pending;
+        var sawOk = false;
+        var sawNg = false;
 
         // We iterate through each file in the folder.
         foreach (var name in await folder.ListAsync(ct))
@@ -60,13 +65,19 @@ public class RoboHandshake(IRoboFolder folder, HandshakeOptions options)
             if (!ControlFileName.TryParse(name, out var parsed, out var kind) || parsed != tray)
                 continue;
 
-            if (kind == ControlResult.Ng)
-                return RoboReply.Ng;
-
-            reply = RoboReply.Ok;
+            if (kind == ControlResult.Ng) sawNg = true;
+            else sawOk = true;
         }
 
-        return reply;
+        if (sawNg)
+        {
+            if (sawOk)
+                logger.LogWarning("Tray {TrayNo}: both OK and NG replies found, treating as NG.", tray.TrayNo);
+
+            logger.LogWarning("Machine rejected tray {TrayNo} (NG).", tray.TrayNo);
+            return RoboReply.Ng;
+        }
+        return sawOk ? RoboReply.Ok : RoboReply.Pending;
     }
 
     // Deletes the DAT files in sequence order, so last tube's DAT goes last.
@@ -96,10 +107,15 @@ public class RoboHandshake(IRoboFolder folder, HandshakeOptions options)
             {
                 await folder.DeleteAsync(name, CancellationToken.None);
             }
-            catch
+            catch (Exception ex)
             {
-                // We'll add logging later.
+                logger.LogWarning(ex, "Could not delete {File} during rollback. It may still be in the robo folder.",
+                    LogName(name));
             }
         }
     }
+
+    // DAT names carry patient ID and name. Keep only the first six parts
+    // (host, robo, date, tray, last flag, seq). A DEF name has five parts, so it stays whole.
+    private static string LogName(string name) => string.Join(",", name.Split(',').Take(6));
 }
