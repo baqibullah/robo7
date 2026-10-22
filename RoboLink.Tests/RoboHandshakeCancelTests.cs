@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using RoboLink.Core;
+using RoboLink.Infrastructure;
 
 namespace RoboLink.Tests;
 
@@ -23,6 +24,21 @@ public class RoboHandshakeCancelTests : IDisposable
             DatFileName.Build(tray[0].TubeOrder)
             ],
             recording.Deletes);
+    }
+
+    [Fact]
+    public async Task CancelAsync_AfterSend_LeavesFolderEmpty()
+    {
+        var folder = new LocalRoboFolder(_folder);
+        var handshake = new RoboHandshake(folder, new HandshakeOptions(), NullLogger<RoboHandshake>.Instance);
+        var tray = new List<Tube> { TestData.MakeTube(1, isLast: false), TestData.MakeTube(2) };
+
+        Assert.Empty(await handshake.SendAsync(tray));
+        Assert.NotEmpty(await folder.ListAsync());
+
+        await handshake.CancelAsync(tray);
+
+        Assert.Empty(await folder.ListAsync());
     }
 
     public void Dispose()
