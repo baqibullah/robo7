@@ -98,6 +98,21 @@ public class RoboHandshake(IRoboFolder folder, HandshakeOptions options, ILogger
         }
     }
 
+    /// <summary>
+    /// Takes back an order machine hasn't answered yet.
+    /// Deletes the DEF file first so the machine can't start on half-removed tray, then DAT files.
+    /// </summary>
+    public async Task CancelAsync(IReadOnlyList<Tube> tray, CancellationToken ct = default)
+    {
+        await folder.DeleteAsync(ControlFileName.From(tray[0].TubeOrder).BuildDef(), ct);
+
+        foreach (var tube in tray.OrderBy(t => t.TubeOrder.SeqNo))
+        {
+            await folder.DeleteAsync(DatFileName.Build(tube.TubeOrder), ct);
+        }
+
+    }
+
     private async Task RemoveAsync(List<string> names)
     {
         names.Reverse();
