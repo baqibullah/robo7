@@ -65,6 +65,34 @@ public class RoboHandshakeCancelTests : IDisposable
         Assert.Equal(expected, [.. (await folder.ListAsync()).Order()]);
     }
 
+    [Fact]
+    public async Task CancelAsync_DefDeleteFails_ThrowsAndDeletesNoDats()
+    {
+        var tray = new List<Tube> { TestData.MakeTube(1, isLast: false), TestData.MakeTube(2) };
+        var defName = ControlFileName.From(tray[0].TubeOrder).BuildDef();
+        var recording = new RecordingFolder { FailDeleteOn = defName };
+        var handshake = new RoboHandshake(recording, new HandshakeOptions(), NullLogger<RoboHandshake>.Instance);
+
+        await Assert.ThrowsAsync<IOException>(() => handshake.CancelAsync(tray));
+
+        Assert.Empty(recording.Deletes);
+    }
+
+    [Fact]
+    public async Task CancelAsync_CalledTwice_DoesNotThrow()
+    {
+        var folder = new LocalRoboFolder(_folder);
+        var handshake = new RoboHandshake(folder, new HandshakeOptions(), NullLogger<RoboHandshake>.Instance);
+        var tray = new List<Tube> { TestData.MakeTube() };
+
+        Assert.Empty(await handshake.SendAsync(tray));
+
+        await handshake.CancelAsync(tray);
+        await handshake.CancelAsync(tray);
+
+        Assert.Empty(await folder.ListAsync());
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_folder)) Directory.Delete(_folder, true);
